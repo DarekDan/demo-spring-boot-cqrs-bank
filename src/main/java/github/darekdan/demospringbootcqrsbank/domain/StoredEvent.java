@@ -6,20 +6,18 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("account_read_model")
-public class AccountReadModel {
+@Table("event_store")
+public class StoredEvent {
     @Id
+    private Long id;
     private String accountId;
-    private String accountHolder;
-    private BigDecimal balance;
-    private String status;
-    private Long transactionCount;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String eventType;
+    private String eventData;
+    private LocalDateTime occurredAt;
+    private LocalDateTime storedAt;
 }

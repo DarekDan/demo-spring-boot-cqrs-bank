@@ -4,7 +4,7 @@ import github.darekdan.demospringbootcqrsbank.command.CommandHandler;
 import github.darekdan.demospringbootcqrsbank.command.CreateAccountCommand;
 import github.darekdan.demospringbootcqrsbank.command.DepositCommand;
 import github.darekdan.demospringbootcqrsbank.command.WithdrawCommand;
-import github.darekdan.demospringbootcqrsbank.domain.AccountReadModel;
+import github.darekdan.demospringbootcqrsbank.domain.Account;
 import github.darekdan.demospringbootcqrsbank.event.DepositedEvent;
 import github.darekdan.demospringbootcqrsbank.event.InsufficientFundsEvent;
 import github.darekdan.demospringbootcqrsbank.event.WithdrawnEvent;
@@ -45,7 +45,7 @@ public class AccountController {
     }
 
     @GetMapping("/{accountId}")
-    public Mono<ResponseEntity<AccountReadModel>> getAccount(@PathVariable String accountId) {
+    public Mono<ResponseEntity<Account>> getAccount(@PathVariable String accountId) {
         return queryHandler.getAccountDetails(accountId)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(

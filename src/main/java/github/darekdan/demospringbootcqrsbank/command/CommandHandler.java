@@ -1,6 +1,7 @@
 package github.darekdan.demospringbootcqrsbank.command;
 
 import github.darekdan.demospringbootcqrsbank.domain.Account;
+import github.darekdan.demospringbootcqrsbank.domain.StoredEvent;
 import github.darekdan.demospringbootcqrsbank.event.*;
 import github.darekdan.demospringbootcqrsbank.repository.AccountRepository;
 import github.darekdan.demospringbootcqrsbank.repository.EventStoreRepository;
@@ -39,6 +40,7 @@ public class CommandHandler {
                     account.setUpdatedAt(LocalDateTime.now());
 
                     return accountRepo.save(account)
+                            .then(accountRepo.findByAccountId(cmd.getAccountId()))
                             .flatMap(saved -> {
                                 AccountCreatedEvent event = new AccountCreatedEvent(
                                         UUID.randomUUID().toString(),

@@ -1,20 +1,20 @@
 package github.darekdan.demospringbootcqrsbank.query;
 
-import github.darekdan.demospringbootcqrsbank.domain.AccountReadModel;
-import github.darekdan.demospringbootcqrsbank.repository.AccountReadModelRepository;
+import github.darekdan.demospringbootcqrsbank.domain.Account;
+import github.darekdan.demospringbootcqrsbank.repository.AccountRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
 public class QueryHandler {
-    private final AccountReadModelRepository readModelRepo;
+    private final AccountRepository accountRepo;
 
-    public QueryHandler(AccountReadModelRepository readModelRepo) {
-        this.readModelRepo = readModelRepo;
+    public QueryHandler(AccountRepository accountRepo) {
+        this.accountRepo = accountRepo;
     }
 
-    public Mono<AccountReadModel> getAccountDetails(String accountId) {
-        return readModelRepo.findByAccountId(accountId)
+    public Mono<Account> getAccountDetails(String accountId) {
+        return accountRepo.findByAccountId(accountId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Account not found")));
     }
 }

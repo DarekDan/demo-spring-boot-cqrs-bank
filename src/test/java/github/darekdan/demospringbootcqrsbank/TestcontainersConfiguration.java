@@ -1,14 +1,15 @@
 package github.darekdan.demospringbootcqrsbank;
 
-import io.r2dbc.pool.ConnectionPool;
-import io.r2dbc.pool.ConnectionPoolConfiguration;
-import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
+import org.springframework.boot.r2dbc.ConnectionFactoryBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
+import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -37,23 +38,17 @@ class TestcontainersConfiguration {
     @Primary
     ConnectionFactory connectionFactory(PostgreSQLContainer<?> postgresContainer) {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
-                .option(ConnectionFactoryOptions.DRIVER, "postgresql")
+                .option(ConnectionFactoryOptions.DRIVER, "pool")
+                .option(ConnectionFactoryOptions.PROTOCOL, "postgresql")
                 .option(ConnectionFactoryOptions.HOST, postgresContainer.getHost())
                 .option(ConnectionFactoryOptions.PORT, postgresContainer.getFirstMappedPort())
                 .option(ConnectionFactoryOptions.DATABASE, postgresContainer.getDatabaseName())
                 .option(ConnectionFactoryOptions.USER, postgresContainer.getUsername())
                 .option(ConnectionFactoryOptions.PASSWORD, postgresContainer.getPassword())
+                .option(ConnectionFactoryOptions.SSL, false)
                 .build();
 
-        ConnectionFactory connectionFactory = ConnectionFactories.get(options);
-
-        ConnectionPoolConfiguration poolConfig = ConnectionPoolConfiguration.builder(connectionFactory)
-                .initialSize(5)
-                .maxSize(10)
-                .validationQuery("SELECT 1")
-                .build();
-
-        return new ConnectionPool(poolConfig);
+        return ConnectionFactoryBuilder.withOptions(ConnectionFactoryOptions.builder().from(options)).build();
     }
 
     @DynamicPropertySource
@@ -63,6 +58,18 @@ class TestcontainersConfiguration {
         registry.add("spring.rabbitmq.listener.simple.retry.enabled", () -> "true");
         registry.add("spring.rabbitmq.listener.simple.retry.max-attempts", () -> "3");
         registry.add("spring.rabbitmq.listener.simple.retry.initial-interval", () -> "1000");
+    }
+
+    @Bean
+    public ConnectionFactoryInitializer initializer(ConnectionFactory connectionFactory) {
+        ConnectionFactoryInitializer initializer = new ConnectionFactoryInitializer();
+        initializer.setConnectionFactory(connectionFactory);
+
+        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+        populator.addScript(new ClassPathResource("schema.sql"));
+
+        initializer.setDatabasePopulator(populator);
+        return initializer;
     }
 
 }
