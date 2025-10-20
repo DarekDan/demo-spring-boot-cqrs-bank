@@ -5,6 +5,7 @@ import github.darekdan.demospringbootcqrsbank.command.CreateAccountCommand;
 import github.darekdan.demospringbootcqrsbank.command.DepositCommand;
 import github.darekdan.demospringbootcqrsbank.event.DepositedEvent;
 import github.darekdan.demospringbootcqrsbank.repository.AccountRepository;
+import github.darekdan.demospringbootcqrsbank.repository.EventStoreRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ class AccountCommandHandlerTests {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    @Autowired
+    private EventStoreRepository eventStoreRepository;
 
     @Test
     @DisplayName("Should create account successfully")
@@ -55,6 +59,15 @@ class AccountCommandHandlerTests {
                     assertEquals("ACC-001", account.getAccountId());
                     assertEquals("ACTIVE", account.getStatus());
                     assertEquals(new BigDecimal("1000.00"), account.getBalance());
+                })
+                .expectComplete()
+                .verify(Duration.ofSeconds(10));
+
+        StepVerifier
+                .create(eventStoreRepository.findByAccountIdAndEventType("ACC-001", "AccountCreatedEvent"))
+                .assertNext(storedEvent -> {
+                    assertEquals("ACC-001", storedEvent.getAccountId());
+                    assertEquals("AccountCreatedEvent", storedEvent.getEventType());
                 })
                 .expectComplete()
                 .verify(Duration.ofSeconds(10));
