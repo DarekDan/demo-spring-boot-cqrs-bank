@@ -1,8 +1,16 @@
 package github.darekdan.demospringbootcqrsbank;
 
+import io.r2dbc.pool.ConnectionPool;
+import io.r2dbc.pool.ConnectionPoolConfiguration;
+import io.r2dbc.spi.ConnectionFactories;
+import io.r2dbc.spi.ConnectionFactory;
+import io.r2dbc.spi.ConnectionFactoryOptions;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -23,6 +31,38 @@ class TestcontainersConfiguration {
     @ServiceConnection
     RabbitMQContainer rabbitContainer() {
         return new RabbitMQContainer(DockerImageName.parse("rabbitmq:latest")).withExposedPorts(5672);
+    }
+
+    @Bean
+    @Primary
+    ConnectionFactory connectionFactory(PostgreSQLContainer<?> postgresContainer) {
+        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+                .option(ConnectionFactoryOptions.DRIVER, "postgresql")
+                .option(ConnectionFactoryOptions.HOST, postgresContainer.getHost())
+                .option(ConnectionFactoryOptions.PORT, postgresContainer.getFirstMappedPort())
+                .option(ConnectionFactoryOptions.DATABASE, postgresContainer.getDatabaseName())
+                .option(ConnectionFactoryOptions.USER, postgresContainer.getUsername())
+                .option(ConnectionFactoryOptions.PASSWORD, postgresContainer.getPassword())
+                .build();
+
+        ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+
+        ConnectionPoolConfiguration poolConfig = ConnectionPoolConfiguration.builder(connectionFactory)
+                .initialSize(5)
+                .maxSize(10)
+                .validationQuery("SELECT 1")
+                .build();
+
+        return new ConnectionPool(poolConfig);
+    }
+
+    @DynamicPropertySource
+    static void dynamicProperties(DynamicPropertyRegistry registry) {
+        // RabbitMQ properties will be auto-configured from the bean
+        registry.add("spring.rabbitmq.listener.simple.acknowledge-mode", () -> "manual");
+        registry.add("spring.rabbitmq.listener.simple.retry.enabled", () -> "true");
+        registry.add("spring.rabbitmq.listener.simple.retry.max-attempts", () -> "3");
+        registry.add("spring.rabbitmq.listener.simple.retry.initial-interval", () -> "1000");
     }
 
 }
