@@ -13,13 +13,16 @@ class TestcontainersConfiguration {
     @Bean
     @ServiceConnection
     PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"));
+        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"))
+                .withDatabaseName("bankdb")
+                .withUsername("postgres")
+                .withPassword("postgres");
     }
 
     @Bean
     @ServiceConnection
     RabbitMQContainer rabbitContainer() {
-        return new RabbitMQContainer(DockerImageName.parse("rabbitmq:latest"));
+        return new RabbitMQContainer(DockerImageName.parse("rabbitmq:latest")).withExposedPorts(5672);
     }
 
 }
