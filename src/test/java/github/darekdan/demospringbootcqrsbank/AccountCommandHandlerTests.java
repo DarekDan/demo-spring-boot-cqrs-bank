@@ -3,9 +3,13 @@ package github.darekdan.demospringbootcqrsbank;
 import github.darekdan.demospringbootcqrsbank.command.CommandHandler;
 import github.darekdan.demospringbootcqrsbank.command.CreateAccountCommand;
 import github.darekdan.demospringbootcqrsbank.command.DepositCommand;
+import github.darekdan.demospringbootcqrsbank.constants.EventTypes;
+import github.darekdan.demospringbootcqrsbank.constants.MessageKeys;
 import github.darekdan.demospringbootcqrsbank.event.DepositedEvent;
 import github.darekdan.demospringbootcqrsbank.repository.AccountRepository;
 import github.darekdan.demospringbootcqrsbank.repository.EventStoreRepository;
+import github.darekdan.demospringbootcqrsbank.service.MessageService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +23,13 @@ import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@Slf4j
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
 @DisplayName("Account Command Handler Tests")
 class AccountCommandHandlerTests {
+
+
 
     @Autowired
     private CommandHandler commandHandler;
@@ -32,6 +39,9 @@ class AccountCommandHandlerTests {
 
     @Autowired
     private EventStoreRepository eventStoreRepository;
+
+    @Autowired
+    private MessageService messageService;
 
     @Test
     @DisplayName("Should create account successfully")
@@ -64,10 +74,10 @@ class AccountCommandHandlerTests {
                 .verify(Duration.ofSeconds(10));
 
         StepVerifier
-                .create(eventStoreRepository.findByAccountIdAndEventType("ACC-001", "AccountCreatedEvent"))
+                .create(eventStoreRepository.findByAccountIdAndEventType("ACC-001", EventTypes.ACCOUNT_CREATED))
                 .assertNext(storedEvent -> {
                     assertEquals("ACC-001", storedEvent.getAccountId());
-                    assertEquals("AccountCreatedEvent", storedEvent.getEventType());
+                    assertEquals(EventTypes.ACCOUNT_CREATED, storedEvent.getEventType());
                 })
                 .expectComplete()
                 .verify(Duration.ofSeconds(10));
@@ -76,15 +86,16 @@ class AccountCommandHandlerTests {
     @Test
     @DisplayName("Should fail creating duplicate account")
     void testCreateAccountDuplicate() {
+        String accountId = "ACC-DUP-" + System.currentTimeMillis();
         CreateAccountCommand cmd = new CreateAccountCommand(
-                "ACC-DUP-" + System.currentTimeMillis(),
+                accountId,
                 "Jane Doe",
                 new BigDecimal("500.00")
         );
 
         StepVerifier.create(commandHandler.handleCreateAccount(cmd)
                         .then(commandHandler.handleCreateAccount(cmd)))
-                .expectErrorMessage("Account already exists")
+                .expectErrorMessage(messageService.getMessage(MessageKeys.ERROR_ACCOUNT_ALREADY_EXISTS, new String[]{accountId}))
                 .verify(Duration.ofSeconds(10));
     }
 

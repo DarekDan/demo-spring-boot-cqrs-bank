@@ -1,10 +1,13 @@
 package github.darekdan.demospringbootcqrsbank.command;
 
+import github.darekdan.demospringbootcqrsbank.constants.EventTypes;
+import github.darekdan.demospringbootcqrsbank.constants.MessageKeys;
 import github.darekdan.demospringbootcqrsbank.domain.Account;
 import github.darekdan.demospringbootcqrsbank.domain.StoredEvent;
 import github.darekdan.demospringbootcqrsbank.event.*;
 import github.darekdan.demospringbootcqrsbank.repository.AccountRepository;
 import github.darekdan.demospringbootcqrsbank.repository.EventStoreRepository;
+import github.darekdan.demospringbootcqrsbank.service.MessageService;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -18,18 +21,20 @@ public class CommandHandler {
     private final AccountRepository accountRepo;
     private final EventStoreRepository eventStoreRepo;
     private final RabbitTemplate rabbitTemplate;
+    private final MessageService messageService;
 
     public CommandHandler(AccountRepository accountRepo,
                           EventStoreRepository eventStoreRepo,
-                          RabbitTemplate rabbitTemplate) {
+                          RabbitTemplate rabbitTemplate, MessageService messageService) {
         this.accountRepo = accountRepo;
         this.eventStoreRepo = eventStoreRepo;
         this.rabbitTemplate = rabbitTemplate;
+        this.messageService = messageService;
     }
 
     public Mono<AccountCreatedEvent> handleCreateAccount(CreateAccountCommand cmd) {
         return accountRepo.findByAccountId(cmd.getAccountId())
-                .flatMap(existing -> Mono.error(new RuntimeException("Account already exists")))
+                .flatMap(existing -> Mono.error(new RuntimeException(messageService.getMessage(MessageKeys.ERROR_ACCOUNT_ALREADY_EXISTS, new String[]{cmd.getAccountId()}))))
                 .switchIfEmpty(Mono.defer(() -> {
                     Account account = new Account();
                     account.setAccountId(cmd.getAccountId());
@@ -50,7 +55,7 @@ public class CommandHandler {
                                         cmd.getInitialBalance(),
                                         LocalDateTime.now()
                                 );
-                                return storeEvent("AccountCreatedEvent", cmd.getAccountId(), event)
+                                return storeEvent(EventTypes.ACCOUNT_CREATED, cmd.getAccountId(), event)
                                         .then(publishEvent("account.created", event))
                                         .then(Mono.just(event));
                             });
