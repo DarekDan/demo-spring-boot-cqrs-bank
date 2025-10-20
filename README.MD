@@ -1,64 +1,30 @@
 # Demo Spring Boot CQRS Bank
 
-A reactive, event-driven demo banking service showcasing CQRS with Spring Boot WebFlux, R2DBC (PostgreSQL), RabbitMQ messaging, and Resilience4j circuit breaking. It is designed as a reference implementation for clean separation of write/read concerns, reactive I/O, and testability with Testcontainers.
+A production-ready, reactive banking service demonstrating **Event Sourcing** and **CQRS** (Command Query Responsibility Segregation) architecture patterns using Spring Boot 3.5, WebFlux, R2DBC, and RabbitMQ. This reference implementation showcases clean separation of write/read concerns, non-blocking reactive I/O, event-driven architecture, and comprehensive testability using Testcontainers.
 
-## Features
-- Reactive HTTP APIs (Spring WebFlux)
-- CQRS: separated command (write) and query (read) flows
-- R2DBC PostgreSQL for non-blocking persistence
-- RabbitMQ for asynchronous event publishing/consumption
-- Resilience4j Circuit Breakers for downstream resilience
-- Actuator for health/metrics
-- Testcontainers-based integration tests
+## 🎯 Project Overview
 
-## Tech Stack
-- Java 21 (compatible), Spring Boot 3.5.x
-- WebFlux, Spring Data R2DBC, Spring AMQP
-- PostgreSQL (r2dbc-postgresql), RabbitMQ
-- Resilience4j CircuitBreaker (reactor)
-- Lombok
-- Test: Spring Boot Test, Reactor Test, Testcontainers
+This application simulates core banking operations (account creation, deposits, withdrawals, and transfers) while implementing:
+- **Command Side**: Processes write operations, validates business rules, persists state, and publishes domain events
+- **Query Side**: Handles read-optimized queries for account details, balances, and transaction history
+- **Event Store**: Immutable audit log of all domain events for event sourcing and compliance
+- **Async Messaging**: Decoupled event publishing via RabbitMQ for scalability and resilience
 
-## Getting Started
-1) Prerequisites:
-- JDK 21+
-- Docker (for Testcontainers or local infra)
-- Maven 3.9+
+## 📋 Table of Contents
+- [Architecture](#-architecture)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [Prerequisites](#-prerequisites)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Running Tests](#-running-tests)
+- [API Documentation](#-api-documentation)
+- [Configuration](#-configuration)
+- [Observability & Monitoring](#-observability--monitoring)
+- [Resilience Patterns](#-resilience-patterns)
+- [Development Guidelines](#-development-guidelines)
+- [License](#-license)
 
-2) Configuration:
-- Application properties should define:
-  - R2DBC URL, user, password
-  - JDBC URL (if flyway/liquibase or blocking admin tooling used)
-  - RabbitMQ host/port/credentials
-  - Optional: Resilience4j circuit breaker configs
-- Typical R2DBC URL: r2dbc:postgresql://localhost:5432/bank
-- Typical Rabbit: amqp://guest:guest@localhost:5672
+## 🏗 Architecture
 
-3) Running locally:
-- Start PostgreSQL and RabbitMQ locally or via docker-compose
-- mvn spring-boot:run
-
-4) Running tests:
-- mvn test
-- Tests use Testcontainers for PostgreSQL/RabbitMQ automatically
-
-## Typical API Flow
-- Command API: create account, deposit, withdraw, transfer => validate and persist via R2DBC; publish domain events to RabbitMQ.
-- Query API: get account details, balances, operation history => read-optimized queries via R2DBC.
-
-## Observability
-- Actuator: /actuator/health, /actuator/metrics, etc.
-- Correlate logs across async boundaries; include request IDs where applicable.
-
-## Resilience
-- Circuit breakers wrap outbound calls (e.g., messaging, external services).
-- Timeouts and retries should be tuned per endpoint.
-
-## Development Notes
-- Prefer reactive types (Mono/Flux) end-to-end.
-- Avoid blocking calls on event loops; use bounded elastic schedulers if necessary.
-- Validate request DTOs; keep controllers thin.
-- Use CQRS segregation at package/module level to avoid coupling.
-
-## License
-For demo/educational purposes.
+### CQRS Pattern
