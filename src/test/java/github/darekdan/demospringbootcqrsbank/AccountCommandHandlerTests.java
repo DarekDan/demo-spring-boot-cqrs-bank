@@ -95,7 +95,7 @@ class AccountCommandHandlerTests {
 
         StepVerifier.create(commandHandler.handleCreateAccount(cmd)
                         .then(commandHandler.handleCreateAccount(cmd)))
-                .expectErrorMessage(messageService.getMessage(MessageKeys.ERROR_ACCOUNT_ALREADY_EXISTS, new String[]{accountId}))
+                .expectErrorMessage(messageService.getMessage(MessageKeys.ERROR_ACCOUNT_ALREADY_EXISTS, accountId))
                 .verify(Duration.ofSeconds(10));
     }
 

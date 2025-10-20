@@ -34,7 +34,7 @@ public class CommandHandler {
 
     public Mono<AccountCreatedEvent> handleCreateAccount(CreateAccountCommand cmd) {
         return accountRepo.findByAccountId(cmd.getAccountId())
-                .flatMap(existing -> Mono.error(new RuntimeException(messageService.getMessage(MessageKeys.ERROR_ACCOUNT_ALREADY_EXISTS, new String[]{cmd.getAccountId()}))))
+                .flatMap(existing -> Mono.error(new RuntimeException(messageService.getMessage(MessageKeys.ERROR_ACCOUNT_ALREADY_EXISTS, cmd.getAccountId()))))
                 .switchIfEmpty(Mono.defer(() -> {
                     Account account = new Account();
                     account.setAccountId(cmd.getAccountId());
