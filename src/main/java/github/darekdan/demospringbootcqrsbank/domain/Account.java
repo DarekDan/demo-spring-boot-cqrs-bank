@@ -25,7 +25,7 @@ public class Account implements Persistable<String> {
     private LocalDateTime updatedAt;
 
     @Transient
-    private boolean isNew = true;
+    private boolean isNew = false;
 
     @Override
     public String getId() {

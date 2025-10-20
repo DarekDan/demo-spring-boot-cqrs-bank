@@ -38,6 +38,7 @@ public class CommandHandler {
                     account.setStatus("ACTIVE");
                     account.setCreatedAt(LocalDateTime.now());
                     account.setUpdatedAt(LocalDateTime.now());
+                    account.markAsNew();
 
                     return accountRepo.save(account)
                             .then(accountRepo.findByAccountId(cmd.getAccountId()))
@@ -62,6 +63,9 @@ public class CommandHandler {
                 .flatMap(account -> {
                     if ("INACTIVE".equals(account.getStatus())) {
                         return Mono.error(new RuntimeException("Account is inactive"));
+                    }
+                    if (cmd.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                        return Mono.error(new RuntimeException("Deposit amount must be positive"));
                     }
                     BigDecimal newBalance = account.getBalance().add(cmd.getAmount());
                     account.setBalance(newBalance);
